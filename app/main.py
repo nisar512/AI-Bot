@@ -1,7 +1,9 @@
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
-from app.api.v1.endpoints import users
+from app.api.v1.endpoints import users, search, scrape, chatbots
 from app.core.config import settings
+from app.core.elastic import elasticsearch_client
+from app.core.selenium import selenium_client
 
 app = FastAPI(
     title=settings.PROJECT_NAME,
@@ -20,6 +22,21 @@ app.add_middleware(
 
 # Include routers
 app.include_router(users.router, prefix=f"{settings.API_V1_STR}/users", tags=["users"])
+app.include_router(search.router, prefix=f"{settings.API_V1_STR}/search", tags=["search"])
+app.include_router(scrape.router, prefix=f"{settings.API_V1_STR}/scrape", tags=["scrape"])
+app.include_router(chatbots.router, prefix=f"{settings.API_V1_STR}/chatbots", tags=["chatbots"])
+
+@app.on_event("startup")
+async def startup_event():
+    """Initialize services on startup."""
+    await elasticsearch_client.init()
+    selenium_client.init()
+
+@app.on_event("shutdown")
+async def shutdown_event():
+    """Close services on shutdown."""
+    await elasticsearch_client.close()
+    selenium_client.close()
 
 @app.get("/")
 def read_root():
