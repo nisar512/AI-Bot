@@ -21,7 +21,8 @@ class Settings(BaseSettings):
     SECRET_KEY: str = "your-secret-key-here"  # Change this in production
     ALGORITHM: str = "HS256"
     ACCESS_TOKEN_EXPIRE_MINUTES: int = 3600
-    
+    OPENAI_API_KEY: str
+    ELASTICSEARCH_URL: str
     class Config:
         case_sensitive = True
         env_file = ".env"
