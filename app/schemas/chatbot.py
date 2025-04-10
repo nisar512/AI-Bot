@@ -3,17 +3,17 @@ from typing import Optional
 
 class ChatbotBase(BaseModel):
     name: str
-    index_id: Optional[str] = None
 
 class ChatbotCreate(ChatbotBase):
     user_id: int
 
 class ChatbotUpdate(ChatbotBase):
-    pass
+    index_id: Optional[str] = None
 
 class ChatbotInDBBase(ChatbotBase):
     id: int
     user_id: int
+    index_id: Optional[str] = None
 
     class Config:
         from_attributes = True
