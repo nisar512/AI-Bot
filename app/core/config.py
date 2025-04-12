@@ -16,13 +16,16 @@ class Settings(BaseSettings):
     # Elasticsearch
     ELASTICSEARCH_HOST: str = "localhost"
     ELASTICSEARCH_PORT: int = 9200
-    SELENIUM_REMOTE_URL:str= "http://localhost:4444/wd/hub"
+    ELASTICSEARCH_URL: str = "http://localhost:9200"
+    ELASTICSEARCH_USER: str = "elastic"  # Default Elasticsearch username
+    ELASTICSEARCH_PASSWORD: str = ""  # Default is empty for local development
+    
     # JWT
-    SECRET_KEY: str = "your-secret-key-here"  # Change this in production
+    SECRET_KEY: str = "your-secret-key-here"
     ALGORITHM: str = "HS256"
     ACCESS_TOKEN_EXPIRE_MINUTES: int = 3600
     OPENAI_API_KEY: str
-    ELASTICSEARCH_URL: str
+    
     class Config:
         case_sensitive = True
         env_file = ".env"

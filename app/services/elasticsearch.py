@@ -1,23 +1,44 @@
 from elasticsearch import Elasticsearch
 from typing import Optional, Dict, Any, List
 import os
-from openai import OpenAI
 from datetime import datetime
+import numpy as np
+import torch
+from sentence_transformers import SentenceTransformer
+from app.core.config import settings
 
-# Initialize Elasticsearch client
-es = Elasticsearch(
-    os.getenv("ELASTICSEARCH_URL", "http://localhost:9200")
-)
-
-# Initialize OpenAI client with proper error handling
+# Initialize NumPy and PyTorch in the correct order
 try:
-    openai_api_key = os.getenv("OPENAI_API_KEY")
-    if not openai_api_key:
-        raise ValueError("OPENAI_API_KEY environment variable is not set")
-    openai_client = OpenAI(api_key=openai_api_key)
+    # First ensure NumPy is properly initialized
+    np.array([1, 2, 3])
+    
+    # Then initialize PyTorch
+    if not torch.cuda.is_available():
+        torch.set_default_device('cpu')
+    
+    # Initialize the sentence transformer model
+    model = SentenceTransformer('all-MiniLM-L6-v2', device='cpu')  # Force CPU usage
+    
 except Exception as e:
-    print(f"Error initializing OpenAI client: {str(e)}")
-    openai_client = None
+    print(f"Error during initialization: {str(e)}")
+    raise
+
+# Initialize Elasticsearch client with proper connection settings
+try:
+    es = Elasticsearch(
+        settings.ELASTICSEARCH_URL,
+        basic_auth=(settings.ELASTICSEARCH_USER, settings.ELASTICSEARCH_PASSWORD),
+        verify_certs=False,  # Set to True in production
+        request_timeout=30
+    )
+    
+    # Test the connection
+    if not es.ping():
+        raise ConnectionError("Could not connect to Elasticsearch. Please make sure Elasticsearch is running.")
+        
+except Exception as e:
+    print(f"Error initializing Elasticsearch client: {str(e)}")
+    raise
 
 def create_bot_index(index_id: str) -> bool:
     """
@@ -39,7 +60,7 @@ def create_bot_index(index_id: str) -> bool:
                         "created_at": {"type": "date"},
                         "embedding": {
                             "type": "dense_vector",
-                            "dims": 1536,  # OpenAI's text-embedding-ada-002 dimension
+                            "dims": 384,  # all-MiniLM-L6-v2 dimension
                             "index": True,
                             "similarity": "cosine"
                         }
@@ -71,17 +92,12 @@ def index_exists(index_id: str) -> bool:
 
 def get_embedding(text: str) -> List[float]:
     """
-    Get embedding for text using OpenAI
+    Get embedding for text using sentence-transformers
     """
-    if not openai_client:
-        raise ValueError("OpenAI client is not initialized. Please set OPENAI_API_KEY environment variable.")
-    
     try:
-        response = openai_client.embeddings.create(
-            input=text,
-            model="text-embedding-ada-002"
-        )
-        return response.data[0].embedding
+        # Generate embedding using the sentence transformer model
+        embedding = model.encode(text, convert_to_tensor=False).tolist()
+        return embedding
     except Exception as e:
         print(f"Error getting embedding: {str(e)}")
         raise
@@ -121,24 +137,44 @@ def search_documents(index_id: str, query: str, size: int = 10) -> List[Dict[str
         # Get embedding for the query
         query_embedding = get_embedding(query)
         
-        # Perform semantic search
+        # Perform semantic search with proper query structure
         response = es.search(
             index=index_id,
             body={
                 "size": size,
                 "query": {
-                    "script_score": {
+                    "function_score": {
                         "query": {"match_all": {}},
-                        "script": {
-                            "source": "cosineSimilarity(params.query_vector, 'embedding') + 1.0",
-                            "params": {"query_vector": query_embedding}
-                        }
+                        "functions": [
+                            {
+                                "script_score": {
+                                    "script": {
+                                        "source": "cosineSimilarity(params.query_vector, 'embedding') + 1.0",
+                                        "params": {"query_vector": query_embedding}
+                                    }
+                                }
+                            }
+                        ],
+                        "boost_mode": "replace"
                     }
-                }
+                },
+                "_source": ["content", "metadata", "created_at"]
             }
         )
         
-        return [hit["_source"] for hit in response["hits"]["hits"]]
+        # Extract and format the results
+        results = []
+        for hit in response["hits"]["hits"]:
+            result = {
+                "content": hit["_source"]["content"],
+                "metadata": hit["_source"].get("metadata", {}),
+                "created_at": hit["_source"].get("created_at"),
+                "score": hit["_score"]
+            }
+            results.append(result)
+        
+        return results
     except Exception as e:
         print(f"Error searching documents in index {index_id}: {str(e)}")
         raise 
+    

@@ -3,17 +3,16 @@ from typing import Optional, Dict, Any
 from datetime import datetime
 
 class DocumentBase(BaseModel):
-    content: str
+    chatbot_id: int
     metadata: Optional[Dict[str, Any]] = None
 
 class DocumentCreate(DocumentBase):
-    chatbot_id: int
+    content: str
 
 class Document(DocumentBase):
     id: str
-    chatbot_id: int
+    content: str
     created_at: datetime
-    embedding: Optional[list[float]] = None
 
     class Config:
         from_attributes = True 
