@@ -185,6 +185,11 @@ async def chat_with_bot(
         # Get or create session
         session = get_or_create_session(db, message.session_id, message.chatbot_id)
 
+        # Get recent chat history for context
+        recent_chats = get_chat_history(db, session_id=session.id, limit=5)
+        recent_chats.sort(key=lambda x: x.created_at)
+        chat_history = "\n".join([f"{chat.role}: {chat.message}" for chat in recent_chats])
+
         # Get relevant documents from Elasticsearch
         relevant_docs = search_documents(
             index_id=chatbot.index_id,
@@ -198,6 +203,9 @@ async def chat_with_bot(
         # Prepare the prompt for OpenRouter
         prompt = f"""You are a helpful AI assistant. Use the following context to answer the user's question.
 If the answer cannot be found in the context, say that you don't know.
+
+Previous conversation:
+{chat_history}
 
 Context:
 {context}
