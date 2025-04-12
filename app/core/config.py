@@ -19,7 +19,7 @@ class Settings(BaseSettings):
     ELASTICSEARCH_URL: str = "http://localhost:9200"
     ELASTICSEARCH_USER: str = "elastic"  # Default Elasticsearch username
     ELASTICSEARCH_PASSWORD: str = ""  # Default is empty for local development
-    
+    SELENIUM_REMOTE_URL:str= "http://localhost:4444/wd/hub"
     # JWT
     SECRET_KEY: str = "your-secret-key-here"
     ALGORITHM: str = "HS256"
