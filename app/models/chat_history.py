@@ -6,6 +6,7 @@ class ChatHistory(Base):
     __tablename__ = "chat_history"
 
     id = Column(Integer, primary_key=True, index=True)
+    session_id = Column(String, ForeignKey("sessions.id"), nullable=False)
     chatbot_id = Column(Integer, ForeignKey("chatbots.id"), nullable=False)
     message = Column(Text, nullable=False)
     role = Column(String, nullable=False)  # 'user' or 'assistant'

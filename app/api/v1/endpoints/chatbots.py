@@ -1,11 +1,11 @@
-from typing import List, Dict, Any
+from typing import List, Dict, Any, Optional
 from fastapi import APIRouter, Depends, HTTPException, status, UploadFile, File
 from fastapi.responses import StreamingResponse
 from sqlalchemy.orm import Session
 from app.db.session import get_db
 from app.schemas.chatbot import Chatbot, ChatbotCreate, ChatbotUpdate
 from app.schemas.document import Document, DocumentCreate
-from app.schemas.chat_history import ChatHistoryCreate
+from app.schemas.chat_history import ChatHistoryCreate, ChatHistoryResponse
 from app.services.chatbot import (
     get_chatbot,
     get_chatbots_by_user,
@@ -16,13 +16,13 @@ from app.services.chatbot import (
 from app.services.document_processor import extract_text_from_file
 from app.services.document import create_document
 from app.services.elasticsearch import search_documents
-from app.services.chat_history import create_chat_history
+from app.services.chat_history import create_chat_history, get_chat_history
+from app.services.session import get_session, get_or_create_session
 from app.core.config import settings
 import os
 import tempfile
 import requests
 from pydantic import BaseModel
-from typing import Optional
 import json
 
 router = APIRouter()
@@ -30,10 +30,12 @@ router = APIRouter()
 class ChatMessage(BaseModel):
     message: str
     chatbot_id: int
+    session_id: Optional[str] = None
 
 class ChatResponse(BaseModel):
     response: str
     sources: List[Dict[str, Any]] = []
+    session_id: str
 
 @router.post("/", response_model=Chatbot, status_code=status.HTTP_201_CREATED)
 def create_new_chatbot(chatbot: ChatbotCreate, db: Session = Depends(get_db)):
@@ -180,6 +182,9 @@ async def chat_with_bot(
                 detail="Chatbot not found"
             )
 
+        # Get or create session
+        session = get_or_create_session(db, message.session_id, message.chatbot_id)
+
         # Get relevant documents from Elasticsearch
         relevant_docs = search_documents(
             index_id=chatbot.index_id,
@@ -249,6 +254,7 @@ Answer:"""
                                 # Store the complete chat history
                                 create_chat_history(
                                     db=db,
+                                    session_id=session.id,
                                     chatbot_id=message.chatbot_id,
                                     user_message=message.message,
                                     assistant_response=full_response
@@ -260,7 +266,7 @@ Answer:"""
                                     content = chunk['choices'][0].get('delta', {}).get('content', '')
                                     if content:
                                         full_response += content
-                                        yield f"data: {json.dumps({'content': content})}\n\n"
+                                        yield f"data: {json.dumps({'content': content, 'session_id': session.id})}\n\n"
                             except json.JSONDecodeError:
                                 continue
 
@@ -275,4 +281,54 @@ Answer:"""
         raise HTTPException(
             status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
             detail=f"Error processing chat: {str(e)}"
+        )
+
+@router.get("/{chatbot_id}/chat/{session_id}", response_model=ChatHistoryResponse)
+def get_chat_history_by_session(
+    chatbot_id: int,
+    session_id: str,
+    skip: int = 0,
+    limit: int = 100,
+    db: Session = Depends(get_db)
+):
+    """
+    Get chat history for a specific session and chatbot
+    """
+    try:
+        # Verify chatbot exists
+        chatbot = get_chatbot(db, chatbot_id=chatbot_id)
+        if not chatbot:
+            raise HTTPException(
+                status_code=status.HTTP_404_NOT_FOUND,
+                detail="Chatbot not found"
+            )
+
+        # Verify session exists and belongs to the chatbot
+        session = get_session(db, session_id)
+        if not session:
+            raise HTTPException(
+                status_code=status.HTTP_404_NOT_FOUND,
+                detail="Session not found"
+            )
+        
+        if session.chatbot_id != chatbot_id:
+            raise HTTPException(
+                status_code=status.HTTP_400_BAD_REQUEST,
+                detail="Session does not belong to this chatbot"
+            )
+
+        # Get chat history
+        messages = get_chat_history(db, session_id=session_id, skip=skip, limit=limit)
+        
+        # Order messages by created_at in ascending order for chronological display
+        messages.sort(key=lambda x: x.created_at)
+        
+        return {"messages": messages}
+
+    except HTTPException:
+        raise
+    except Exception as e:
+        raise HTTPException(
+            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+            detail=f"Error retrieving chat history: {str(e)}"
         ) 
