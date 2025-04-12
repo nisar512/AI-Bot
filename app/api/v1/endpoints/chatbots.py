@@ -1,9 +1,11 @@
 from typing import List, Dict, Any
 from fastapi import APIRouter, Depends, HTTPException, status, UploadFile, File
+from fastapi.responses import StreamingResponse
 from sqlalchemy.orm import Session
 from app.db.session import get_db
 from app.schemas.chatbot import Chatbot, ChatbotCreate, ChatbotUpdate
 from app.schemas.document import Document, DocumentCreate
+from app.schemas.chat_history import ChatHistoryCreate
 from app.services.chatbot import (
     get_chatbot,
     get_chatbots_by_user,
@@ -14,12 +16,14 @@ from app.services.chatbot import (
 from app.services.document_processor import extract_text_from_file
 from app.services.document import create_document
 from app.services.elasticsearch import search_documents
+from app.services.chat_history import create_chat_history
 from app.core.config import settings
 import os
 import tempfile
 import requests
 from pydantic import BaseModel
 from typing import Optional
+import json
 
 router = APIRouter()
 
@@ -159,13 +163,13 @@ async def upload_document(
             detail=f"Error processing document: {str(e)}"
         )
 
-@router.post("/{chatbot_id}/chat", response_model=ChatResponse)
+@router.post("/{chatbot_id}/chat")
 async def chat_with_bot(
     message: ChatMessage,
     db: Session = Depends(get_db)
 ):
     """
-    Chat with a specific chatbot using semantic search and OpenRouter
+    Chat with a specific chatbot using semantic search and OpenRouter with streaming response
     """
     try:
         # Verify chatbot exists
@@ -197,7 +201,7 @@ User Question: {message.message}
 
 Answer:"""
 
-        # Call OpenRouter API
+        # Call OpenRouter API with streaming
         headers = {
             "Authorization": f"Bearer {settings.OPENAI_API_KEY}",
             "Content-Type": "application/json",
@@ -216,27 +220,53 @@ Answer:"""
                     "role": "user",
                     "content": prompt
                 }
-            ]
+            ],
+            "stream": True
         }
 
-        response = requests.post(
-            "https://openrouter.ai/api/v1/chat/completions",
-            headers=headers,
-            json=data
-        )
+        full_response = ""
 
-        if response.status_code != 200:
-            raise HTTPException(
-                status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
-                detail=f"Error calling OpenRouter API: {response.text}"
-            )
+        async def generate():
+            nonlocal full_response
+            with requests.post(
+                "https://openrouter.ai/api/v1/chat/completions",
+                headers=headers,
+                json=data,
+                stream=True
+            ) as response:
+                if response.status_code != 200:
+                    raise HTTPException(
+                        status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+                        detail=f"Error calling OpenRouter API: {response.text}"
+                    )
 
-        # Extract the response
-        ai_response = response.json()["choices"][0]["message"]["content"]
+                for line in response.iter_lines():
+                    if line:
+                        line = line.decode('utf-8')
+                        if line.startswith('data: '):
+                            line = line[6:]  # Remove 'data: ' prefix
+                            if line.strip() == '[DONE]':
+                                # Store the complete chat history
+                                create_chat_history(
+                                    db=db,
+                                    chatbot_id=message.chatbot_id,
+                                    user_message=message.message,
+                                    assistant_response=full_response
+                                )
+                                break
+                            try:
+                                chunk = json.loads(line)
+                                if 'choices' in chunk and len(chunk['choices']) > 0:
+                                    content = chunk['choices'][0].get('delta', {}).get('content', '')
+                                    if content:
+                                        full_response += content
+                                        yield f"data: {json.dumps({'content': content})}\n\n"
+                            except json.JSONDecodeError:
+                                continue
 
-        return ChatResponse(
-            response=ai_response,
-            sources=relevant_docs
+        return StreamingResponse(
+            generate(),
+            media_type="text/event-stream"
         )
 
     except HTTPException:
