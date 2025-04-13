@@ -1,6 +1,6 @@
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
-from app.api.v1.endpoints import users, search, scrape, chatbots, access_keys
+from app.api.v1.endpoints import auth, chatbots, access_keys
 from app.core.config import settings
 from app.core.elastic import elasticsearch_client
 from app.core.selenium import selenium_client
@@ -14,18 +14,16 @@ app = FastAPI(
 # Set up CORS middleware
 app.add_middleware(
     CORSMiddleware,
-    allow_origins=["*"],  # In production, replace with specific origins
+    allow_origins=settings.CORS_ORIGINS,
     allow_credentials=True,
     allow_methods=["*"],
     allow_headers=["*"],
 )
 
 # Include routers
-app.include_router(users.router, prefix=f"{settings.API_V1_STR}/users", tags=["users"])
-app.include_router(search.router, prefix=f"{settings.API_V1_STR}/search", tags=["search"])
-app.include_router(scrape.router, prefix=f"{settings.API_V1_STR}/scrape", tags=["scrape"])
-app.include_router(chatbots.router, prefix=f"{settings.API_V1_STR}/chatbots", tags=["chatbots"])
-app.include_router(access_keys.router, prefix=f"{settings.API_V1_STR}/access-keys", tags=["access-keys"])
+app.include_router(auth.router, prefix="/api/v1/auth", tags=["auth"])
+app.include_router(chatbots.router, prefix="/api/v1/chatbots", tags=["chatbots"])
+app.include_router(access_keys.router, prefix="/api/v1/access-keys", tags=["access-keys"])
 
 @app.on_event("startup")
 async def startup_event():
