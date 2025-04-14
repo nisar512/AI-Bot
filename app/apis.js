@@ -41,7 +41,9 @@ export const login = async (data) => {
 export const createChatbot = async (data) => {
   try {
     const userId = getUserId();
-    data.user_id = userId;
+    console.log(userId);
+    
+    data["user_id"] = userId;
     const response = await axiosInstance.post(
       `${process.env.NEXT_PUBLIC_API_BASE_URL}/api/v1/chatbots`,
       data,

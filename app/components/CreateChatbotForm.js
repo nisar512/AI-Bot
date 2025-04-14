@@ -1,63 +1,61 @@
 "use client";
-import React, { useState } from 'react'
-import { createChatbot } from '@/app/apis'
-import { useRouter } from 'next/navigation'
+import React, { useState } from "react";
+import { createChatbot } from "@/app/apis";
+import { useRouter } from "next/navigation";
+import { Card, CardHeader, CardTitle, CardContent } from "@/components/ui/card";
+import { Button } from "@/components/ui/button";
+import { Input } from "@/components/ui/input";
+import { Label } from "@/components/ui/label";
+import { toast } from "sonner";
 
 const CreateChatbotForm = () => {
-  const [name, setName] = useState('')
-  const [isSubmitting, setIsSubmitting] = useState(false)
-  const [error, setError] = useState('')
-  const router = useRouter()
+  const [name, setName] = useState("");
+  const [isSubmitting, setIsSubmitting] = useState(false);
+  const router = useRouter();
 
   const handleSubmit = async (e) => {
-    e.preventDefault()
-    setIsSubmitting(true)
-    setError('')
+    e.preventDefault();
+    setIsSubmitting(true);
 
     try {
-      await createChatbot({ name })
-      router.push('/dashboard') // Redirect to dashboard after successful creation
+      const data={
+        name
+      }
+      await createChatbot(data);
+      toast("Chatbot created successfully");
+      router.push("/dashboard/knowledge");
     } catch (err) {
-      setError(err.message || 'Failed to create chatbot')
+      toast(err.message || "Failed to create chatbot");
     } finally {
-      setIsSubmitting(false)
+      setIsSubmitting(false);
     }
-  }
+  };
 
   return (
-    <div className="max-w-md mx-auto p-6">
-      <h1 className="text-2xl font-bold mb-6">Create New Chatbot</h1>
-      
-      <form onSubmit={handleSubmit} className="space-y-4">
-        <div>
-          <label htmlFor="name" className="block text-sm font-medium text-gray-700 mb-1">
-            Chatbot Name
-          </label>
-          <input
-            type="text"
-            id="name"
-            value={name}
-            onChange={(e) => setName(e.target.value)}
-            className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
-            required
-            placeholder="Enter chatbot name"
-          />
-        </div>
+    <Card className="max-w-md mx-auto">
+      <CardHeader>
+        <CardTitle>Create New Chatbot</CardTitle>
+      </CardHeader>
+      <CardContent>
+        <form onSubmit={handleSubmit} className="space-y-4">
+          <div className="space-y-2">
+            <Label htmlFor="name">Chatbot Name</Label>
+            <Input
+              id="name"
+              value={name}
+              onChange={(e) => setName(e.target.value)}
+              placeholder="Enter chatbot name"
+              required
+            />
+          </div>
 
-        {error && (
-          <div className="text-red-500 text-sm">{error}</div>
-        )}
+          <Button type="submit" className="w-full" disabled={isSubmitting}>
+            {isSubmitting ? "Creating..." : "Create Chatbot"}
+          </Button>
+        </form>
+      </CardContent>
+    </Card>
+  );
+};
 
-        <button
-          type="submit"
-          disabled={isSubmitting}
-          className="w-full bg-blue-500 text-white py-2 px-4 rounded-md hover:bg-blue-600 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2 disabled:opacity-50"
-        >
-          {isSubmitting ? 'Creating...' : 'Create Chatbot'}
-        </button>
-      </form>
-    </div>
-  )
-}
-
-export default CreateChatbotForm 
+export default CreateChatbotForm;
