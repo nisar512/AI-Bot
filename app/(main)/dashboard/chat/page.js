@@ -1,6 +1,6 @@
 import React from 'react'
 
-const KnowledgePagepage = () => {
+const ChatPage = () => {
   return (
     <div>
       
@@ -8,4 +8,4 @@ const KnowledgePagepage = () => {
   )
 }
 
-export default KnowledgePagepage
+export default ChatPage
