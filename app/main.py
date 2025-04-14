@@ -4,7 +4,6 @@ from app.api.v1.endpoints import auth, chatbots, access_keys, scrape
 from app.core.config import settings
 from app.core.elastic import elasticsearch_client
 from app.core.selenium import selenium_client
-
 app = FastAPI(
     title=settings.PROJECT_NAME,
     version=settings.VERSION,

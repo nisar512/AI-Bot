@@ -1,5 +1,6 @@
 from pydantic_settings import BaseSettings
 from typing import Optional, List
+from pydantic import field_validator
 
 class Settings(BaseSettings):
     PROJECT_NAME: str = "FastAPI Backend"
@@ -26,7 +27,12 @@ class Settings(BaseSettings):
     # JWT
     SECRET_KEY: str = "your-secret-key-here"
     ALGORITHM: str = "HS256"
-    ACCESS_TOKEN_EXPIRE_MINUTES: int = 3600
+    ACCESS_TOKEN_EXPIRE_MINUTES: int
+    @field_validator("ACCESS_TOKEN_EXPIRE_MINUTES", mode="before")
+    def validate_expire_minutes(cls, v):
+        if isinstance(v, str):
+            return int(v.strip().split()[0])  # Will strip off comments or spaces
+        return v
     OPENAI_API_KEY: str
     
     class Config:
