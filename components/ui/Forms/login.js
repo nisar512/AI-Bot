@@ -28,7 +28,10 @@ export function LoginForm({ className, ...props }) {
       setDisable(true);
       setError(false);
       const response = await login(formData);
+      
       Cookies.set("token", response?.access_token);
+      Cookies.set("user_id", response?.user_id);
+
       router.push("/dashboard/knowledge")
     } catch (error) {
       console.error(error);
