@@ -1,6 +1,6 @@
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
-from app.api.v1.endpoints import auth, chatbots, access_keys
+from app.api.v1.endpoints import auth, chatbots, access_keys, scrape
 from app.core.config import settings
 from app.core.elastic import elasticsearch_client
 from app.core.selenium import selenium_client
@@ -24,6 +24,7 @@ app.add_middleware(
 app.include_router(auth.router, prefix="/api/v1/auth", tags=["auth"])
 app.include_router(chatbots.router, prefix="/api/v1/chatbots", tags=["chatbots"])
 app.include_router(access_keys.router, prefix="/api/v1/access-keys", tags=["access-keys"])
+app.include_router(scrape.router, prefix="/api/v1/scrape", tags=["scrape"])
 
 @app.on_event("startup")
 async def startup_event():
