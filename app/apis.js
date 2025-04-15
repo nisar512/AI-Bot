@@ -4,7 +4,6 @@ import Cookies from "js-cookie";
 const getToken = () => Cookies.get("token");
 const getUserId = () => Cookies.get("user_id");
 
-
 const axiosInstance = axios.create({
   baseURL: process.env.NEXT_PUBLIC_API_BASE_URL,
 });
@@ -42,11 +41,39 @@ export const createChatbot = async (data) => {
   try {
     const userId = getUserId();
     console.log(userId);
-    
+
     data["user_id"] = userId;
     const response = await axiosInstance.post(
       `${process.env.NEXT_PUBLIC_API_BASE_URL}/api/v1/chatbots`,
-      data,
+      data
+    );
+    return response.data;
+  } catch (error) {
+    handleApiError(error);
+  }
+};
+
+///api/v1/chatbots/user/{user_id}
+
+export const getChatbots = async () => {
+  try {
+    const userId = getUserId();
+
+    const response = await axiosInstance.get(
+      `${process.env.NEXT_PUBLIC_API_BASE_URL}/api/v1/chatbots/user/${userId}`
+    );
+    return response.data;
+  } catch (error) {
+    handleApiError(error);
+  }
+};
+
+///api/v1/chatbots/{chatbot_id}
+
+export const deleteChatbot = async (chatbotId) => {
+  try {
+    const response = await axiosInstance.delete(
+      `${process.env.NEXT_PUBLIC_API_BASE_URL}/api/v1/chatbots/${chatbotId}`
     );
     return response.data;
   } catch (error) {
