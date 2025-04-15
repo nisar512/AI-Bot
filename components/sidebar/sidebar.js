@@ -1,5 +1,6 @@
 "use client"
-import { Plus, MessageSquare, Settings, User } from "lucide-react"
+import { Plus, MessageSquare, Settings, User, Bot } from "lucide-react"
+import { useRouter } from "next/navigation"
 
 import {
   Sidebar,
@@ -26,15 +27,31 @@ const chatHistory = [
 ]
 
 export default function ChatSidebar() {
+  const router = useRouter();
+
   return (
     <Sidebar>
       <SidebarHeader>
         <SidebarMenu>
           <SidebarMenuItem>
             <SidebarMenuButton asChild>
-              <Button variant="outline" className="w-full justify-start gap-2">
+              <Button variant="outline"
+              onClick={() => router.push("/dashboard/chat")}
+              className="w-full justify-start gap-2">
                 <Plus size={16} />
                 <span>New Chat</span>
+              </Button>
+            </SidebarMenuButton>
+          </SidebarMenuItem>
+          <SidebarMenuItem>
+            <SidebarMenuButton asChild>
+              <Button 
+                variant="outline" 
+                className="w-full justify-start gap-2"
+                onClick={() => router.push("/dashboard")}
+              >
+                <Bot size={16} />
+                <span>Create New Bot</span>
               </Button>
             </SidebarMenuButton>
           </SidebarMenuItem>

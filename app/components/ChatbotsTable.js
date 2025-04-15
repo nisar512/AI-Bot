@@ -110,8 +110,8 @@ const ChatbotsTable = ({ refreshTrigger }) => {
               <TableHead className="font-semibold text-gray-700 w-[60px]"></TableHead>
               <TableHead className="font-semibold text-gray-700">Name</TableHead>
               <TableHead className="font-semibold text-gray-700">Status</TableHead>
-              <TableHead className="font-semibold text-gray-700 w-[100px]">Actions</TableHead>
-              <TableHead className="font-semibold text-gray-700 w-[150px]">Knowledge</TableHead>
+              <TableHead className="font-semibold text-gray-700">Actions</TableHead>
+              <TableHead className="font-semibold text-gray-700 w-[250px]">Knowledge</TableHead>
             </TableRow>
           </TableHeader>
           <TableBody>
