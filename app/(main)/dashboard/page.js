@@ -15,6 +15,12 @@ import { Plus } from "lucide-react";
 
 const DashboardPage = () => {
   const [isDialogOpen, setIsDialogOpen] = useState(false);
+  const [refreshTrigger, setRefreshTrigger] = useState(0);
+
+  const handleSuccess = () => {
+    setIsDialogOpen(false);
+    setRefreshTrigger(prev => prev + 1); // Increment to trigger refresh
+  };
 
   return (
     <div className="min-h-screen bg-gradient-to-b from-gray-50 to-white">
@@ -38,11 +44,11 @@ const DashboardPage = () => {
                 <DialogHeader>
                   <DialogTitle>Create New Bot</DialogTitle>
                 </DialogHeader>
-                <CreateChatbotForm onSuccess={() => setIsDialogOpen(false)} />
+                <CreateChatbotForm onSuccess={handleSuccess} />
               </DialogContent>
             </Dialog>
           </div>
-          <ChatbotsTable />
+          <ChatbotsTable refreshTrigger={refreshTrigger} />
         </Card>
       </div>
     </div>

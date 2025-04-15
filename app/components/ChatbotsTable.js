@@ -16,6 +16,7 @@ import {
   ChevronsLeft,
   ChevronsRight,
   Trash2,
+  Bot,
 } from "lucide-react";
 import { toast } from "sonner";
 import { Badge } from "@/components/ui/badge";
@@ -34,7 +35,7 @@ import {
 
 const ITEMS_PER_PAGE = 10;
 
-const ChatbotsTable = () => {
+const ChatbotsTable = ({ refreshTrigger }) => {
   const [chatbots, setChatbots] = useState([]);
   const [currentPage, setCurrentPage] = useState(1);
   const [isLoading, setIsLoading] = useState(true);
@@ -42,7 +43,7 @@ const ChatbotsTable = () => {
 
   useEffect(() => {
     fetchChatbots();
-  }, []);
+  }, [refreshTrigger]);
 
   const fetchChatbots = async () => {
     try {
@@ -103,6 +104,7 @@ const ChatbotsTable = () => {
         <Table>
           <TableHeader className="bg-gray-50">
             <TableRow>
+              <TableHead className="font-semibold text-gray-700 w-[60px]"></TableHead>
               <TableHead className="font-semibold text-gray-700">Name</TableHead>
               <TableHead className="font-semibold text-gray-700">Status</TableHead>
               <TableHead className="font-semibold text-gray-700 w-[100px]">Actions</TableHead>
@@ -112,6 +114,9 @@ const ChatbotsTable = () => {
             {isLoading ? (
               Array.from({ length: 5 }).map((_, index) => (
                 <TableRow key={index}>
+                  <TableCell>
+                    <Skeleton className="h-8 w-8 rounded-full" />
+                  </TableCell>
                   <TableCell>
                     <Skeleton className="h-4 w-[200px]" />
                   </TableCell>
@@ -125,7 +130,7 @@ const ChatbotsTable = () => {
               ))
             ) : currentChatbots.length === 0 ? (
               <TableRow>
-                <TableCell colSpan={3} className="text-center py-8">
+                <TableCell colSpan={4} className="text-center py-8">
                   <div className="flex flex-col items-center space-y-2">
                     <div className="text-gray-500">No chatbots found</div>
                     <div className="text-sm text-gray-400">
@@ -140,6 +145,13 @@ const ChatbotsTable = () => {
                   key={chatbot.id}
                   className="hover:bg-gray-50 transition-colors"
                 >
+                  <TableCell>
+                    <div className="flex items-center justify-center">
+                      <div className="bg-blue-100 p-2 rounded-full">
+                        <Bot className="h-6 w-6 text-blue-600" />
+                      </div>
+                    </div>
+                  </TableCell>
                   <TableCell className="font-medium">{chatbot.name}</TableCell>
                   <TableCell>{getStatusBadge(chatbot.status)}</TableCell>
                   <TableCell>

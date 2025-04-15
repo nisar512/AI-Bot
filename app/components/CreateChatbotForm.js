@@ -1,7 +1,6 @@
 "use client";
 import React, { useState } from "react";
 import { createChatbot } from "@/app/apis";
-import { useRouter } from "next/navigation";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -10,7 +9,6 @@ import { toast } from "sonner";
 const CreateChatbotForm = ({ onSuccess }) => {
   const [name, setName] = useState("");
   const [isSubmitting, setIsSubmitting] = useState(false);
-  const router = useRouter();
 
   const handleSubmit = async (e) => {
     e.preventDefault();
@@ -21,7 +19,6 @@ const CreateChatbotForm = ({ onSuccess }) => {
       toast.success("Chatbot created successfully");
       setName("");
       onSuccess?.();
-      router.refresh();
     } catch (err) {
       toast.error(err.message || "Failed to create chatbot");
     } finally {
