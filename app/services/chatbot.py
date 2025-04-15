@@ -1,9 +1,12 @@
 from typing import List, Optional
 from sqlalchemy.orm import Session
 from app.models.chatbot import Chatbot
+from app.models.session import Session
+from app.models.chat_history import ChatHistory
+from app.models.access_key import AccessKey
 from app.schemas.chatbot import ChatbotCreate, ChatbotUpdate
 from app.services.user import get_user
-from app.services.elasticsearch import create_bot_index
+from app.services.elasticsearch import create_bot_index, delete_bot_index
 
 def get_chatbot(db: Session, chatbot_id: int) -> Optional[Chatbot]:
     return db.query(Chatbot).filter(Chatbot.id == chatbot_id).first()
@@ -59,11 +62,26 @@ def delete_chatbot(db: Session, chatbot_id: int) -> bool:
     if not db_chatbot:
         return False
     
-    # Delete Elasticsearch index if it exists
-    if db_chatbot.index_id:
-        from app.services.elasticsearch import delete_bot_index
-        delete_bot_index(db_chatbot.index_id)
-    
-    db.delete(db_chatbot)
-    db.commit()
-    return True 
+    try:
+        # Delete related records in the correct order
+        # 1. Delete chat history
+        db.query(ChatHistory).filter(ChatHistory.chatbot_id == chatbot_id).delete()
+        
+        # 2. Delete sessions
+        db.query(Session).filter(Session.chatbot_id == chatbot_id).delete()
+        
+        # 3. Delete access keys
+        db.query(AccessKey).filter(AccessKey.chatbot_id == chatbot_id).delete()
+        
+        # 4. Delete Elasticsearch index if it exists
+        if db_chatbot.index_id:
+            delete_bot_index(db_chatbot.index_id)
+        
+        # 5. Finally, delete the chatbot
+        db.delete(db_chatbot)
+        db.commit()
+        return True
+        
+    except Exception as e:
+        db.rollback()
+        raise e 
