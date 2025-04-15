@@ -81,6 +81,51 @@ export const deleteChatbot = async (chatbotId) => {
   }
 };
 
+///api/v1/chatbots/{chatbot_id}/upload-document
+
+export const uploadDocument = async (chatbotId, data) => {
+  try {
+    const response = await axiosInstance.post(
+      `${process.env.NEXT_PUBLIC_API_BASE_URL}/api/v1/chatbots/${chatbotId}/upload-document`, 
+      data,
+      {
+        headers: {
+          "Content-Type": "multipart/form-data",
+        },
+      }
+    );
+    return response.data;
+  } catch (error) {
+    handleApiError(error);
+  }
+};
+
+///api/v1/scrape/scrape
+
+export const scrape = async (url,chatbot_id) => {
+  try {
+    const response = await axiosInstance.post(
+      `${process.env.NEXT_PUBLIC_API_BASE_URL}/api/v1/scrape/scrape?url=${url}&chatbot_id=${chatbot_id}`,
+    );
+    return response.data;
+  } catch (error) {
+    handleApiError(error);
+  }
+};
+
+///api/v1/scrape/process-sitemap?sitemap_url={sitemap_url}&chatbot_id={chatbot_id}
+
+export const processSitemap = async (sitemap_url,chatbot_id,limit) => {
+  try {
+    const response = await axiosInstance.post(
+      `${process.env.NEXT_PUBLIC_API_BASE_URL}/api/v1/scrape/process-sitemap?sitemap_url=${sitemap_url}&chatbot_id=${chatbot_id}&limit=${limit}`,
+    );
+    return response.data;
+  } catch (error) {
+    handleApiError(error);
+  }
+};
+
 const handleApiError = (error) => {
   if (error.response) {
     // console.error("API Error:", error.response.data);

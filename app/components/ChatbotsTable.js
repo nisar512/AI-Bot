@@ -17,6 +17,7 @@ import {
   ChevronsRight,
   Trash2,
   Bot,
+  BookOpen,
 } from "lucide-react";
 import { toast } from "sonner";
 import { Badge } from "@/components/ui/badge";
@@ -32,10 +33,12 @@ import {
   AlertDialogTitle,
   AlertDialogTrigger,
 } from "@/components/ui/alert-dialog";
+import { useRouter } from "next/navigation";
 
 const ITEMS_PER_PAGE = 10;
 
 const ChatbotsTable = ({ refreshTrigger }) => {
+  const router = useRouter();
   const [chatbots, setChatbots] = useState([]);
   const [currentPage, setCurrentPage] = useState(1);
   const [isLoading, setIsLoading] = useState(true);
@@ -108,6 +111,7 @@ const ChatbotsTable = ({ refreshTrigger }) => {
               <TableHead className="font-semibold text-gray-700">Name</TableHead>
               <TableHead className="font-semibold text-gray-700">Status</TableHead>
               <TableHead className="font-semibold text-gray-700 w-[100px]">Actions</TableHead>
+              <TableHead className="font-semibold text-gray-700 w-[150px]">Knowledge</TableHead>
             </TableRow>
           </TableHeader>
           <TableBody>
@@ -126,11 +130,14 @@ const ChatbotsTable = ({ refreshTrigger }) => {
                   <TableCell>
                     <Skeleton className="h-4 w-[50px]" />
                   </TableCell>
+                  <TableCell>
+                    <Skeleton className="h-4 w-[100px]" />
+                  </TableCell>
                 </TableRow>
               ))
             ) : currentChatbots.length === 0 ? (
               <TableRow>
-                <TableCell colSpan={4} className="text-center py-8">
+                <TableCell colSpan={5} className="text-center py-8">
                   <div className="flex flex-col items-center space-y-2">
                     <div className="text-gray-500">No chatbots found</div>
                     <div className="text-sm text-gray-400">
@@ -184,6 +191,17 @@ const ChatbotsTable = ({ refreshTrigger }) => {
                         </AlertDialogFooter>
                       </AlertDialogContent>
                     </AlertDialog>
+                  </TableCell>
+                  <TableCell>
+                    <Button
+                      variant="outline"
+                      size="sm"
+                      className="w-full"
+                      onClick={() => router.push(`/dashboard/knowledge/${chatbot.id}`)}
+                    >
+                      <BookOpen className="h-4 w-4 mr-2" />
+                      Manage Knowledge
+                    </Button>
                   </TableCell>
                 </TableRow>
               ))

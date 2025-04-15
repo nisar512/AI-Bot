@@ -32,7 +32,7 @@ export function LoginForm({ className, ...props }) {
       Cookies.set("token", response?.access_token);
       Cookies.set("user_id", response?.user_id);
 
-      router.push("/dashboard/knowledge")
+      router.push("/dashboard")
     } catch (error) {
       console.error(error);
       setError(true);
