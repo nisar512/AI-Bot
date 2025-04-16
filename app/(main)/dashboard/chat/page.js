@@ -1,9 +1,12 @@
-import React from 'react'
+import React, { Suspense } from 'react'
 import ChatWindow from '@/components/Chat/chat'
+
 const ChatPage = () => {
   return (
     <div className='w-full h-full'>
-      <ChatWindow />
+      <Suspense fallback={<div>Loading chat...</div>}>
+        <ChatWindow />
+      </Suspense>
     </div>
   )
 }

@@ -8,7 +8,7 @@ import { Textarea } from "@/components/ui/textarea";
 import { ScrollArea } from "@/components/ui/scroll-area";
 import { getChatbots, getChat } from "@/app/apis";
 import { toast } from "sonner";
-import MarkdownPreview from '@uiw/react-markdown-preview';
+import MarkdownPreview from "@uiw/react-markdown-preview";
 import {
   Select,
   SelectContent,
@@ -55,7 +55,7 @@ export default function ChatWindow() {
       loadSessionMessages(sessionId, chatbotId);
       // Update selected chatbot if it exists in the chatbots list
       if (chatbots.length > 0) {
-        const chatbot = chatbots.find(bot => bot.id === parseInt(chatbotId));
+        const chatbot = chatbots.find((bot) => bot.id === parseInt(chatbotId));
         if (chatbot) {
           setSelectedChatbot(chatbot);
         }
@@ -76,8 +76,8 @@ export default function ChatWindow() {
       const data = await getChatbots();
       setChatbots(data);
       if (data.length > 0) {
-        const initialChatbot = chatbotId 
-          ? data.find(bot => bot.id === parseInt(chatbotId)) 
+        const initialChatbot = chatbotId
+          ? data.find((bot) => bot.id === parseInt(chatbotId))
           : data[0];
         setSelectedChatbot(initialChatbot);
       }
@@ -86,13 +86,13 @@ export default function ChatWindow() {
     }
   };
 
-  const loadSessionMessages = async (chatbotId,sessionId) => {
+  const loadSessionMessages = async (chatbotId, sessionId) => {
     try {
       setIsLoading(true);
-      const data = await getChat(sessionId,chatbotId);
-      const formattedMessages = data.messages.map(msg => ({
+      const data = await getChat(sessionId, chatbotId);
+      const formattedMessages = data.messages.map((msg) => ({
         role: msg.role,
-        content: msg.message
+        content: msg.message,
       }));
       setMessages(formattedMessages);
     } catch (err) {
@@ -162,10 +162,16 @@ export default function ChatWindow() {
                 assistantMessage += parsed.content;
                 setMessages((prev) => {
                   const newMessages = [...prev];
-                  if (newMessages[newMessages.length - 1]?.role === "assistant") {
-                    newMessages[newMessages.length - 1].content = assistantMessage;
+                  if (
+                    newMessages[newMessages.length - 1]?.role === "assistant"
+                  ) {
+                    newMessages[newMessages.length - 1].content =
+                      assistantMessage;
                   } else {
-                    newMessages.push({ role: "assistant", content: assistantMessage });
+                    newMessages.push({
+                      role: "assistant",
+                      content: assistantMessage,
+                    });
                   }
                   return newMessages;
                 });
@@ -175,8 +181,8 @@ export default function ChatWindow() {
                 newSessionId = parsed.session_id;
                 // Update URL with new session ID
                 const url = new URL(window.location.href);
-                url.searchParams.set('session_id', newSessionId);
-                window.history.pushState({}, '', url);
+                url.searchParams.set("session_id", newSessionId);
+                window.history.pushState({}, "", url);
               }
             } catch (e) {
               console.error("Error parsing chunk:", e);
@@ -186,7 +192,10 @@ export default function ChatWindow() {
       }
     } catch (err) {
       toast.error(err.message || "Failed to send message");
-      setMessages((prev) => [...prev, { role: "error", content: "Failed to send message" }]);
+      setMessages((prev) => [
+        ...prev,
+        { role: "error", content: "Failed to send message" },
+      ]);
     } finally {
       setIsLoading(false);
     }
@@ -246,10 +255,10 @@ export default function ChatWindow() {
                       : ""
                   }`}
                 >
-                   <MarkdownPreview 
-  source={message.content} 
-  className="!bg-transparent !text-inherit prose prose-neutral dark:prose-invert max-w-none"
-/>
+                  <MarkdownPreview
+                    source={message.content}
+                    className="!bg-transparent !text-inherit prose prose-neutral dark:prose-invert max-w-none"
+                  />
                 </div>
               </div>
             ))}
