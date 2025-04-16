@@ -223,7 +223,7 @@ Answer:"""
         }
 
         data = {
-            "model": "openai/gpt-3.5-turbo:free",
+            "model": "openai/gpt-4o",
             "messages": [
                 {
                     "role": "system",
