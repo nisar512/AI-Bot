@@ -68,6 +68,34 @@ export const getChatbots = async () => {
   }
 };
 
+///api/v1/chatbots/user/{user_id}/sessions
+
+export const getSessions = async () => {
+  try {
+    const userId = getUserId();
+    const response = await axiosInstance.get(
+      `${process.env.NEXT_PUBLIC_API_BASE_URL}/api/v1/chatbots/user/${userId}/sessions`
+    );
+    return response.data;
+  } catch (error) {
+    handleApiError(error);
+  }
+};
+
+
+///api/v1/chatbots/{chatbot_id}/chat/{session_id}
+
+export const getChat = async (chatbotId, sessionId) => {
+  try {
+    const response = await axiosInstance.get(
+      `${process.env.NEXT_PUBLIC_API_BASE_URL}/api/v1/chatbots/${chatbotId}/chat/${sessionId}`
+    );
+    return response.data;
+  } catch (error) {
+    handleApiError(error);
+  }
+};
+
 ///api/v1/chatbots/{chatbot_id}
 
 export const deleteChatbot = async (chatbotId) => {

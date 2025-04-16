@@ -6,8 +6,9 @@ import { SidebarInset, SidebarTrigger } from "@/components/ui/sidebar";
 import { Button } from "@/components/ui/button";
 import { Textarea } from "@/components/ui/textarea";
 import { ScrollArea } from "@/components/ui/scroll-area";
-import { getChatbots } from "@/app/apis";
+import { getChatbots, getChat } from "@/app/apis";
 import { toast } from "sonner";
+import MarkdownPreview from '@uiw/react-markdown-preview';
 import {
   Select,
   SelectContent,
@@ -15,6 +16,7 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
+import { useSearchParams } from "next/navigation";
 
 // Sample messages
 const initialMessages = [
@@ -33,10 +35,13 @@ const initialMessages = [
 ];
 
 export default function ChatWindow() {
+  const searchParams = useSearchParams();
+  const sessionId = searchParams.get("session_id");
+  const chatbotId = searchParams.get("chatbot_id");
+
   const [messages, setMessages] = useState([]);
   const [input, setInput] = useState("");
   const [isLoading, setIsLoading] = useState(false);
-  const [sessionId, setSessionId] = useState(null);
   const [selectedChatbot, setSelectedChatbot] = useState(null);
   const [chatbots, setChatbots] = useState([]);
   const bottomRef = useRef(null);
@@ -44,6 +49,23 @@ export default function ChatWindow() {
   useEffect(() => {
     fetchChatbots();
   }, []);
+
+  useEffect(() => {
+    if (sessionId && chatbotId) {
+      loadSessionMessages(sessionId, chatbotId);
+      // Update selected chatbot if it exists in the chatbots list
+      if (chatbots.length > 0) {
+        const chatbot = chatbots.find(bot => bot.id === parseInt(chatbotId));
+        if (chatbot) {
+          setSelectedChatbot(chatbot);
+        }
+      }
+    } else {
+      // Clear messages when there's no session (new chat)
+      setMessages([]);
+      setInput("");
+    }
+  }, [sessionId, chatbotId, chatbots]);
 
   useEffect(() => {
     bottomRef.current?.scrollIntoView({ behavior: "smooth" });
@@ -54,20 +76,38 @@ export default function ChatWindow() {
       const data = await getChatbots();
       setChatbots(data);
       if (data.length > 0) {
-        setSelectedChatbot(data[0]);
+        const initialChatbot = chatbotId 
+          ? data.find(bot => bot.id === parseInt(chatbotId)) 
+          : data[0];
+        setSelectedChatbot(initialChatbot);
       }
     } catch (err) {
       toast.error("Failed to fetch chatbots");
     }
   };
 
+  const loadSessionMessages = async (chatbotId,sessionId) => {
+    try {
+      setIsLoading(true);
+      const data = await getChat(sessionId,chatbotId);
+      const formattedMessages = data.messages.map(msg => ({
+        role: msg.role,
+        content: msg.message
+      }));
+      setMessages(formattedMessages);
+    } catch (err) {
+      toast.error("Failed to load chat history");
+    } finally {
+      setIsLoading(false);
+    }
+  };
+
   const handleChatbotChange = (chatbotId) => {
-    const newChatbot = chatbots.find((bot) => bot.id === chatbotId);
+    const newChatbot = chatbots.find((bot) => bot.id === parseInt(chatbotId));
     if (newChatbot) {
       setSelectedChatbot(newChatbot);
-      // Clear messages and session ID when switching chatbots
+      // Clear messages when switching chatbots
       setMessages([]);
-      setSessionId(null);
     }
   };
 
@@ -101,6 +141,7 @@ export default function ChatWindow() {
 
       const reader = response.body.getReader();
       let assistantMessage = "";
+      let newSessionId = null;
 
       while (true) {
         const { done, value } = await reader.read();
@@ -117,9 +158,6 @@ export default function ChatWindow() {
             }
             try {
               const parsed = JSON.parse(data);
-              if (parsed.session_id && !sessionId) {
-                setSessionId(parsed.session_id);
-              }
               if (parsed.content) {
                 assistantMessage += parsed.content;
                 setMessages((prev) => {
@@ -131,6 +169,14 @@ export default function ChatWindow() {
                   }
                   return newMessages;
                 });
+              }
+              // Set session ID from the first response if it's null
+              if (!sessionId && parsed.session_id && !newSessionId) {
+                newSessionId = parsed.session_id;
+                // Update URL with new session ID
+                const url = new URL(window.location.href);
+                url.searchParams.set('session_id', newSessionId);
+                window.history.pushState({}, '', url);
               }
             } catch (e) {
               console.error("Error parsing chunk:", e);
@@ -162,7 +208,7 @@ export default function ChatWindow() {
         <div className="flex-1 flex items-center justify-between">
           <h1 className="text-lg font-semibold">Chat</h1>
           <Select
-            value={selectedChatbot?.id}
+            value={selectedChatbot?.id?.toString()}
             onValueChange={handleChatbotChange}
           >
             <SelectTrigger className="w-[200px]">
@@ -170,7 +216,7 @@ export default function ChatWindow() {
             </SelectTrigger>
             <SelectContent>
               {chatbots.map((chatbot) => (
-                <SelectItem key={chatbot.id} value={chatbot.id}>
+                <SelectItem key={chatbot.id} value={chatbot.id.toString()}>
                   {chatbot.name}
                 </SelectItem>
               ))}
@@ -197,10 +243,13 @@ export default function ChatWindow() {
                       ? "bg-primary text-primary-foreground"
                       : message.role === "error"
                       ? "bg-red-100 text-red-900"
-                      : "bg-muted"
+                      : ""
                   }`}
                 >
-                  {message.content}
+                   <MarkdownPreview 
+  source={message.content} 
+  className="!bg-transparent !text-inherit prose prose-neutral dark:prose-invert max-w-none"
+/>
                 </div>
               </div>
             ))}
