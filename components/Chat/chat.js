@@ -6,7 +6,7 @@ import { SidebarInset, SidebarTrigger } from "@/components/ui/sidebar";
 import { Button } from "@/components/ui/button";
 import { Textarea } from "@/components/ui/textarea";
 import { ScrollArea } from "@/components/ui/scroll-area";
-import { getChatbots, getChat } from "@/app/apis";
+import { getChatbots, getChat, getAccessKey } from "@/app/apis";
 import { toast } from "sonner";
 import MarkdownPreview from "@uiw/react-markdown-preview";
 import {
@@ -17,6 +17,13 @@ import {
   SelectValue,
 } from "@/components/ui/select";
 import { useSearchParams } from "next/navigation";
+import {
+  Dialog,
+  DialogContent,
+  DialogHeader,
+  DialogTitle,
+  DialogTrigger,
+} from "@/components/ui/dialog";
 
 // Sample messages
 const initialMessages = [
@@ -45,6 +52,9 @@ export default function ChatWindow() {
   const [selectedChatbot, setSelectedChatbot] = useState(null);
   const [chatbots, setChatbots] = useState([]);
   const bottomRef = useRef(null);
+  const [showAccessDialog, setShowAccessDialog] = useState(false);
+  const [accessKey, setAccessKey] = useState("");
+  const [accessScript, setAccessScript] = useState("");
 
   useEffect(() => {
     fetchChatbots();
@@ -208,6 +218,25 @@ export default function ChatWindow() {
     }
   };
 
+  const handleGetAccess = async () => {
+    if (!selectedChatbot) return;
+    
+    try {
+      const response = await getAccessKey({
+        chatbot_id: selectedChatbot.id
+      });
+      
+      if (response && response.key) {
+        setAccessKey(response.key);
+        const script = `<script src='http://localhost:3000/bundle.js' key=${response.key} chatbot_id=${selectedChatbot.id} class='build-chat-ai-bot' defer ></script>`;
+        setAccessScript(script);
+        setShowAccessDialog(true);
+      }
+    } catch (err) {
+      toast.error("Failed to get access key");
+    }
+  };
+
   return (
     <SidebarInset className="flex flex-col h-screen">
       {" "}
@@ -216,21 +245,30 @@ export default function ChatWindow() {
         <SidebarTrigger className="mr-2" />
         <div className="flex-1 flex items-center justify-between">
           <h1 className="text-lg font-semibold">Chat</h1>
-          <Select
-            value={selectedChatbot?.id?.toString()}
-            onValueChange={handleChatbotChange}
-          >
-            <SelectTrigger className="w-[200px]">
-              <SelectValue placeholder="Select a chatbot" />
-            </SelectTrigger>
-            <SelectContent>
-              {chatbots.map((chatbot) => (
-                <SelectItem key={chatbot.id} value={chatbot.id.toString()}>
-                  {chatbot.name}
-                </SelectItem>
-              ))}
-            </SelectContent>
-          </Select>
+          <div className="flex items-center gap-2">
+            <Button
+              variant="outline"
+              onClick={handleGetAccess}
+              disabled={!selectedChatbot}
+            >
+              Access External
+            </Button>
+            <Select
+              value={selectedChatbot?.id?.toString()}
+              onValueChange={handleChatbotChange}
+            >
+              <SelectTrigger className="w-[200px]">
+                <SelectValue placeholder="Select a chatbot" />
+              </SelectTrigger>
+              <SelectContent>
+                {chatbots.map((chatbot) => (
+                  <SelectItem key={chatbot.id} value={chatbot.id.toString()}>
+                    {chatbot.name}
+                  </SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
+          </div>
         </div>
       </header>
       {/* Message area */}
@@ -287,6 +325,19 @@ export default function ChatWindow() {
           </Button>
         </div>
       </div>
+      <Dialog open={showAccessDialog} onOpenChange={setShowAccessDialog}>
+        <DialogContent>
+          <DialogHeader>
+            <DialogTitle>External Access Script</DialogTitle>
+          </DialogHeader>
+          <div className="mt-4">
+            <p className="text-sm text-gray-500 mb-2">Copy and paste this script into your website:</p>
+            <div className="bg-gray-100 p-4 rounded-md">
+              <code className="text-sm break-all">{accessScript}</code>
+            </div>
+          </div>
+        </DialogContent>
+      </Dialog>
     </SidebarInset>
   );
 }

@@ -154,6 +154,20 @@ export const processSitemap = async (sitemap_url,chatbot_id,limit) => {
   }
 };
 
+
+///api/v1/access-keys/
+
+export const getAccessKey = async (data) => {
+  try {
+    const response = await axiosInstance.post(
+      `${process.env.NEXT_PUBLIC_API_BASE_URL}/api/v1/access-keys/`,
+      data
+    );
+    return response.data;
+  } catch (error) {
+    handleApiError(error);
+  }
+};
 const handleApiError = (error) => {
   if (error.response) {
     // console.error("API Error:", error.response.data);
