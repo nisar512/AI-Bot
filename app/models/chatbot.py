@@ -11,4 +11,7 @@ class Chatbot(Base):
     index_id = Column(String, nullable=True)  # Can be null
 
     # Relationship with User
-    user = relationship("User", back_populates="chatbots") 
+    user = relationship("User", back_populates="chatbots")
+    
+    # Relationship with Session
+    sessions = relationship("Session", back_populates="chatbot") 

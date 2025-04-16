@@ -6,6 +6,7 @@ from app.db.session import get_db
 from app.schemas.chatbot import Chatbot, ChatbotCreate, ChatbotUpdate
 from app.schemas.document import Document, DocumentCreate
 from app.schemas.chat_history import ChatHistoryCreate, ChatHistoryResponse
+from app.schemas.session import SessionList
 from app.services.chatbot import (
     get_chatbot,
     get_chatbots_by_user,
@@ -17,7 +18,7 @@ from app.services.document_processor import extract_text_from_file
 from app.services.document import create_document
 from app.services.elasticsearch import search_documents
 from app.services.chat_history import create_chat_history, get_chat_history
-from app.services.session import get_session, get_or_create_session
+from app.services.session import get_session, get_or_create_session, get_user_sessions_with_first_message
 from app.core.config import settings
 import os
 import tempfile
@@ -339,4 +340,21 @@ def get_chat_history_by_session(
         raise HTTPException(
             status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
             detail=f"Error retrieving chat history: {str(e)}"
+        )
+
+@router.get("/user/{user_id}/sessions", response_model=SessionList)
+def get_user_sessions(
+    user_id: int,
+    db: Session = Depends(get_db)
+):
+    """
+    Get all sessions for a user with their first messages
+    """
+    try:
+        sessions = get_user_sessions_with_first_message(db, user_id)
+        return {"sessions": sessions}
+    except Exception as e:
+        raise HTTPException(
+            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+            detail=f"Error retrieving sessions: {str(e)}"
         ) 
