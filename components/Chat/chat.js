@@ -25,26 +25,14 @@ import {
   DialogTrigger,
 } from "@/components/ui/dialog";
 
-// Sample messages
-const initialMessages = [
-  { id: 1, role: "system", content: "How can I help you today?" },
-  {
-    id: 2,
-    role: "user",
-    content: "I need help with creating a responsive layout.",
-  },
-  {
-    id: 3,
-    role: "system",
-    content:
-      "Sure, I can help with that. Would you like to use CSS Grid, Flexbox, or a combination of both?",
-  },
-];
+
 
 export default function ChatWindow() {
   const searchParams = useSearchParams();
   const sessionId = searchParams.get("session_id");
   const chatbotId = searchParams.get("chatbot_id");
+  const q = searchParams.get("q");
+
 
   const [messages, setMessages] = useState([]);
   const [input, setInput] = useState("");
@@ -70,10 +58,16 @@ export default function ChatWindow() {
           setSelectedChatbot(chatbot);
         }
       }
-    } else {
+    }
+    else {
       // Clear messages when there's no session (new chat)
-      setMessages([]);
-      setInput("");
+      if(sessionId && q){
+
+      }else{
+        setMessages([]);
+        setInput("");
+      }
+  
     }
   }, [sessionId, chatbotId, chatbots]);
 
@@ -192,6 +186,8 @@ export default function ChatWindow() {
                 // Update URL with new session ID
                 const url = new URL(window.location.href);
                 url.searchParams.set("session_id", newSessionId);
+                url.searchParams.set("q", userMessage);
+
                 window.history.pushState({}, "", url);
               }
             } catch (e) {
